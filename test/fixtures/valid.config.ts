@@ -1,0 +1,12 @@
+import { defineAffiliates } from '../../src/config.ts';
+
+export default defineAffiliates({
+  'deep-work': {
+    url: 'https://www.amazon.com/dp/1455586692?tag=fixture-20',
+    label: 'Deep Work',
+  },
+  'good-strategy-bad-strategy': {
+    url: 'https://www.amazon.com/dp/0307886239?tag=fixture-20',
+    label: 'Good Strategy Bad Strategy',
+  },
+});

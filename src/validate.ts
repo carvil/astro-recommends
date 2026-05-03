@@ -1,26 +1,55 @@
+import { readFile, readdir } from 'node:fs/promises';
+import { join, relative } from 'node:path';
 import type { AffiliatesMap, ValidateMode } from './config.ts';
 
 export interface ValidationResult {
-  unknownSlugs: { slug: string; file: string; line?: number }[];
+  unknownSlugs: { slug: string; file: string }[];
   unusedSlugs: string[];
 }
 
-/**
- * Walk content collections, find every <Aff slug="..."> usage and
- * every bare /<basePath>/<slug>/ href, cross-check against affiliates.
- *
- *   - unknownSlugs: referenced in content but missing from config
- *   - unusedSlugs:  defined in config but never referenced
- *
- * v0.1 implementation pending. The integration converts the result
- * into a thrown Error / logger.warn / no-op based on `mode`.
- */
+const AFF_RE = /<Aff[\s\S]*?\bslug=["']([^"']+)["']/g;
+const CONTENT_EXTS = /\.(md|mdx)$/;
+
+async function walkContent(dir: string): Promise<string[]> {
+  const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
+  const out: string[] = [];
+  for (const e of entries) {
+    const full = join(dir, e.name);
+    if (e.isDirectory()) {
+      out.push(...(await walkContent(full)));
+    } else if (CONTENT_EXTS.test(e.name)) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
 export async function validateAffiliateUsage(
-  _contentRoot: string,
+  contentRoot: string,
   _basePath: string,
-  _affiliates: AffiliatesMap,
+  affiliates: AffiliatesMap,
 ): Promise<ValidationResult> {
-  return { unknownSlugs: [], unusedSlugs: [] };
+  const files = await walkContent(contentRoot);
+  const used = new Set<string>();
+  const unknown: { slug: string; file: string }[] = [];
+
+  for (const file of files) {
+    const text = await readFile(file, 'utf8');
+    AFF_RE.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = AFF_RE.exec(text)) !== null) {
+      const slug = match[1];
+      if (slug === undefined) continue;
+      used.add(slug);
+      if (!(slug in affiliates)) {
+        unknown.push({ slug, file: relative(process.cwd(), file) });
+      }
+    }
+  }
+
+  const unusedSlugs = Object.keys(affiliates).filter((s) => !used.has(s));
+
+  return { unknownSlugs: unknown, unusedSlugs };
 }
 
 export function reportValidation(
@@ -29,16 +58,24 @@ export function reportValidation(
   logger: { info: (m: string) => void; warn: (m: string) => void },
 ): void {
   if (mode === 'off') return;
-  const messages: string[] = [];
+
+  const errs: string[] = [];
   for (const u of result.unknownSlugs) {
-    messages.push(
-      `unknown slug "${u.slug}" referenced in ${u.file}${u.line ? `:${u.line}` : ''}`,
+    errs.push(`unknown slug "${u.slug}" referenced in ${u.file}`);
+  }
+
+  if (errs.length > 0) {
+    const joined = errs.map((m) => `  - ${m}`).join('\n');
+    if (mode === 'strict') {
+      throw new Error(`[astro-recommends] validation failed:\n${joined}`);
+    }
+    logger.warn(`[astro-recommends] validation:\n${joined}`);
+  }
+
+  if (result.unusedSlugs.length > 0) {
+    const list = result.unusedSlugs.map((s) => `  - ${s}`).join('\n');
+    logger.info(
+      `[astro-recommends] ${result.unusedSlugs.length} affiliate(s) defined but not referenced in content:\n${list}`,
     );
   }
-  if (messages.length === 0) return;
-  const joined = messages.map((m) => `  - ${m}`).join('\n');
-  if (mode === 'strict') {
-    throw new Error(`[astro-recommends] validation failed:\n${joined}`);
-  }
-  logger.warn(`[astro-recommends] validation:\n${joined}`);
 }

@@ -1,0 +1,7 @@
+{
+  // Comments allowed in .jsonc — useful for renegotiation notes
+  "deep-work": {
+    "url": "https://www.amazon.com/dp/1455586692?tag=fixture-20", /* canonical Amazon URL */
+    "label": "Deep Work"
+  }
+}
