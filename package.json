@@ -1,6 +1,6 @@
 {
   "name": "astro-recommends",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Affiliate link cloaking for Astro — single-source-of-truth config, build-time edge redirects, MDX component. A static-site replacement for ThirstyAffiliates.",
   "type": "module",
   "license": "MIT",
