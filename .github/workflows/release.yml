@@ -31,6 +31,15 @@ jobs:
           cache: pnpm
           registry-url: 'https://registry.npmjs.org'
 
+      # npm Trusted Publishing requires npm CLI >= 11.5.1; Node 22 ships
+      # with npm 10.x. Force-upgrade npm globally so `npm publish` can
+      # exchange the GitHub OIDC token for a publish credential. Without
+      # this, the publish step sends an unauthenticated PUT and npm
+      # responds with a 404 (which it intentionally returns for permission
+      # failures to avoid leaking package-existence info).
+      - name: Upgrade npm for Trusted Publishing
+        run: npm install -g npm@latest
+
       - name: Install
         run: pnpm install --frozen-lockfile
 
@@ -46,5 +55,10 @@ jobs:
           title: 'chore: release'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # No NPM_TOKEN — this package uses npm Trusted Publishing
+          # (OIDC). The trust is anchored on npm in the package's
+          # 'Trusted Publisher' setting (carvil/astro-recommends,
+          # release.yml). The 'id-token: write' permission below lets
+          # the workflow request an OIDC token; npm CLI 11.5.1+ exchanges
+          # it for a publish credential automatically.
           NPM_CONFIG_PROVENANCE: 'true'
