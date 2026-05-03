@@ -3,15 +3,15 @@ import { z } from 'zod';
 /**
  * Single affiliate entry. The slug is the *key* in the parent map,
  * not a field — this keeps the file diff-friendly when reordering.
+ *
+ * `note` is purely for the author's own bookkeeping (commission rates,
+ * expiry dates, renegotiation reminders) — it's never rendered, and only
+ * surfaces in the config file diff history.
  */
 export const affiliateSchema = z
   .object({
     url: z.string().url(),
     label: z.string().optional(),
-    rel: z.array(z.string()).optional(),
-    target: z.enum(['_blank', '_self', '_parent', '_top']).optional(),
-    nofollow: z.boolean().optional(),
-    sponsored: z.boolean().optional(),
     note: z.string().optional(),
   })
   .strict();
@@ -35,8 +35,6 @@ export const defaultsSchema = z
   .object({
     rel: z.array(z.string()).optional(),
     target: z.enum(['_blank', '_self', '_parent', '_top']).optional(),
-    nofollow: z.boolean().optional(),
-    sponsored: z.boolean().optional(),
   })
   .strict()
   .optional();

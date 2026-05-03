@@ -1,10 +1,15 @@
 # Examples
 
-A runnable demo Astro site consuming `astro-recommends` will land here before v0.1 release. It will:
+## `import-thirstyaffiliates.mjs`
 
-- Use `affiliates.config.ts` with a few entries.
-- Render an MDX post with `<Aff>` usages.
-- Configure the integration with `target: 'cloudflare'` and a custom `basePath`.
-- Snapshot the generated `_redirects`.
+Pulls affiliate links from a WordPress site running ThirstyAffiliates and writes them to `affiliates.config.ts` for `astro-recommends`. ThirstyAffiliates exposes its `thirstylink` custom post type via the public WP REST API — works on the free plan, no Pro upgrade needed.
 
-For now, see the parent project at `~/Documents/Personal/carlosvilhena.com/` (when present), which dogfoods the library against 71 real entries migrated from ThirstyAffiliates.
+```bash
+node import-thirstyaffiliates.mjs \
+  --site https://yourdomain.com \
+  --out  ./affiliates.config.ts
+```
+
+Set the integration's `basePath` to match your existing WP cloak prefix (`/go` or `/recommends`) so every existing in-content link, RSS reader cache, and external share keeps resolving to the same destination.
+
+Built and tested against carlosvilhena.com (71 entries, all preserved byte-for-byte). The script has no dependencies — Node 18.17+ has `fetch` built in.

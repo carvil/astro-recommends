@@ -2,12 +2,27 @@
 "astro-recommends": minor
 ---
 
-Initial v0.1 surface:
+Initial public release.
 
-- `defineAffiliates()` config helper with Zod schema validation.
-- Astro integration default export — loads config, injects a virtual module for the `<Aff>` component, validates content references, and writes the redirects file at build time.
-- `<Aff slug="...">label</Aff>` component (`astro-recommends/components`) reading basePath + rel/target defaults from the integration via `astro-recommends:resolved`.
-- Auto-detection of `affiliates.config.{ts,mts,js,mjs,jsonc,json,yaml,yml}`. TS configs loaded via jiti — no build step required in the consumer's project.
-- Redirect generators for **Cloudflare Pages** and **Netlify** (snapshot-tested).
-- Build-time content scan: detects unknown slugs referenced in `<Aff>` usages and unused entries defined in config. Configurable via `validate: 'strict' | 'warn' | 'off'`.
-- Configurable `basePath` (default `/recommends`); per-entry rel/target overrides; global defaults applied otherwise.
+**Integration**
+
+- Default export `recommends(options)` — Astro integration.
+- Hooks: `astro:config:setup` loads + validates the affiliates config and injects the `astro-recommends:resolved` virtual module; `astro:build:setup` walks `src/content/**/*.{md,mdx}` and validates `<Aff>` slug usage; `astro:build:done` writes the redirects file to `dist/`.
+- Options: `basePath` (default `/recommends`), `target` (`'cloudflare' | 'netlify'`), `validate` (`'strict' | 'warn' | 'off'`, default `strict`), `defaults.rel`, `defaults.target`, optional explicit `config` path.
+
+**Component**
+
+- `<Aff slug="…">label</Aff>` from `astro-recommends/components`. Renders a cloaked anchor at `{basePath}/{slug}` with the resolved `rel` and `target`. Per-element props (`rel`, `target`, `class`) override the integration defaults.
+
+**Config**
+
+- `defineAffiliates(map)` identity helper with Zod schema validation. Each entry: `url` (required, must be a valid URL), optional `label`, optional `note` (author bookkeeping, never rendered). Slugs must be URL-safe (lowercase letters, digits, hyphens; no leading/trailing hyphen).
+- Auto-detection of `affiliates.config.{ts,mts,js,mjs,jsonc,json,yaml,yml}`. TypeScript configs loaded via jiti — no consumer build step required.
+
+**Targets**
+
+- Cloudflare Pages and Netlify `_redirects` formats. Snapshot-tested.
+
+**Migration**
+
+- Reference script in `examples/import-thirstyaffiliates.mjs` for pulling existing affiliates from a WordPress site running ThirstyAffiliates via the public WP REST API. Built-in CLI planned for v0.2.

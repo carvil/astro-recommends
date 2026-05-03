@@ -13,8 +13,6 @@ declare module 'astro-recommends:resolved' {
     defaults: {
       rel?: string[];
       target?: '_blank' | '_self' | '_parent' | '_top';
-      nofollow?: boolean;
-      sponsored?: boolean;
     };
   }
   export const resolved: ResolvedRuntime;

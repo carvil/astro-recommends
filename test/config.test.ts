@@ -36,4 +36,28 @@ describe('defineAffiliates', () => {
       }),
     ).toThrow(/astro-recommends/);
   });
+
+  it('accepts the trimmed v0.1 shape: url, optional label, optional note', () => {
+    const result = defineAffiliates({
+      foo: {
+        url: 'https://example.com/foo',
+        label: 'Foo',
+        note: '15% commission, expires 2027-01-01',
+      },
+      'bare-slug': {
+        url: 'https://example.com/bar',
+      },
+    });
+    expect(result.foo?.note).toContain('15%');
+    expect(result['bare-slug']?.label).toBeUndefined();
+  });
+
+  it('rejects per-entry rel/target overrides (use <Aff> props instead, v0.1)', () => {
+    expect(() =>
+      defineAffiliates({
+        // @ts-expect-error -- per-entry rel/target are not in v0.1 schema
+        slug: { url: 'https://example.com', rel: ['nofollow'], target: '_blank' },
+      }),
+    ).toThrow(/astro-recommends/);
+  });
 });

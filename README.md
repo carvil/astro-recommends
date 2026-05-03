@@ -1,20 +1,19 @@
 # astro-recommends
 
-> Affiliate link cloaking for Astro. One config file → edge redirects + an `<Aff>` component. A static-site replacement for ThirstyAffiliates.
+> Affiliate link cloaking for Astro. One config file → edge redirects + an `<Aff>` MDX component. A static-site replacement for ThirstyAffiliates.
 
 [![npm](https://img.shields.io/npm/v/astro-recommends.svg)](https://www.npmjs.com/package/astro-recommends)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Why
 
-Affiliate-link plugins like ThirstyAffiliates lock you to WordPress. The actual job — mapping a cloaked URL on your domain to an external affiliate destination, with the right `rel` attributes — is a few lines of redirect rules. `astro-recommends` does that at build time, with one source-of-truth config and a typed component for inline use.
+Affiliate-link plugins like ThirstyAffiliates lock you to WordPress. The actual job — mapping a cloaked URL on your domain to an external affiliate destination, with the right `rel` attributes, plus refusing to render unknown slugs — is small enough to do at build time. `astro-recommends` does that, with one source-of-truth config and a typed component for inline use.
 
 ## Status
 
-**v0.1 — in development.** Public API may change before 1.0. See [CHANGELOG.md](./CHANGELOG.md).
+**v0.1** — first public release. The API is small and intentionally so; expect minor additions before 1.0, no breaking changes are planned. See [CHANGELOG.md](./CHANGELOG.md).
 
-Targets supported in v0.1: **Cloudflare Pages**, **Netlify**.
-Planned for v0.2: Vercel, nginx, ThirstyAffiliates CSV importer.
+Targets: **Cloudflare Pages**, **Netlify**.
 
 ## Install
 
@@ -24,7 +23,11 @@ pnpm add astro-recommends
 npm install astro-recommends
 ```
 
+Requires Astro 5 or 6 and Node 18.17+.
+
 ## Quick start
+
+**1. Add the integration:**
 
 ```ts
 // astro.config.mjs
@@ -34,7 +37,7 @@ import recommends from 'astro-recommends';
 export default defineConfig({
   integrations: [
     recommends({
-      basePath: '/go',           // URL prefix for cloaked links
+      basePath: '/go',           // URL prefix for cloaked links — any path works
       target: 'cloudflare',      // 'cloudflare' | 'netlify'
       validate: 'strict',        // 'strict' | 'warn' | 'off'
       defaults: {
@@ -45,6 +48,8 @@ export default defineConfig({
   ],
 });
 ```
+
+**2. Define your affiliates:**
 
 ```ts
 // affiliates.config.ts
@@ -58,9 +63,12 @@ export default defineAffiliates({
   'good-strategy-bad-strategy': {
     url: 'https://www.amazon.com/dp/0307886239?tag=yourtag-20',
     label: 'Good Strategy Bad Strategy',
+    note: '15% commission via Amazon Associates, expires 2027-01-01',
   },
 });
 ```
+
+**3. Use the `<Aff>` component in MDX:**
 
 ```mdx
 ---
@@ -71,26 +79,117 @@ import { Aff } from 'astro-recommends/components';
 I cite <Aff slug="deep-work">Deep Work</Aff> in every other essay.
 ```
 
-At build time:
-- `public/_redirects` (or Netlify equivalent) gets `/go/deep-work  https://...  302`
-- `<Aff slug="deep-work">Deep Work</Aff>` renders `<a href="/go/deep-work" rel="sponsored nofollow noopener" target="_blank">Deep Work</a>`
-- Build fails (or warns) if a `<Aff slug>` references an unknown entry
+**4. Build:**
 
-## Config formats
+```bash
+pnpm build
+```
 
-`astro-recommends` auto-detects in this order: `affiliates.config.ts` → `.js` → `.mjs` → `.jsonc` → `.json` → `.yaml` / `.yml`. Override with the `config` integration option.
+The build emits `dist/_redirects` (Cloudflare/Netlify format):
 
-TypeScript is recommended (autocomplete, type checking, comments). JSON/YAML are accepted for users who prefer plain data files or generate config from another tool.
+```
+/go/deep-work                 https://www.amazon.com/dp/1455586692?tag=yourtag-20  302
+/go/good-strategy-bad-strategy https://www.amazon.com/dp/0307886239?tag=yourtag-20  302
+```
 
-## Migration from ThirstyAffiliates
+The `<Aff>` component renders:
 
-Coming in v0.2: `npx astro-recommends import-thirsty <export.csv>`.
+```html
+<a href="/go/deep-work" rel="sponsored nofollow noopener" target="_blank">Deep Work</a>
+```
 
-Until then: ThirstyAffiliates exposes the `thirstylink` custom post type via the public WP REST API (`/wp-json/wp/v2/thirstylink?per_page=100`) — even on the free plan. Pull JSON, transform to `affiliates.config.ts`. A reference script lives in [`examples/`](./examples/).
+If you reference an unknown slug (typo, deleted entry), the build **fails** under `validate: 'strict'` with a clean prefixed error pointing at the file. Under `'warn'` it logs and continues. Under `'off'` it skips the scan.
+
+## How it works
+
+- **Build-time redirect generation.** The integration writes a `_redirects` file to your build output (Cloudflare Pages or Netlify format). The redirect runs at the edge of your CDN — no JS, no server-side handler, no runtime cost.
+- **Virtual module for the component.** `astro:config:setup` injects `astro-recommends:resolved` (a Vite virtual module) carrying the resolved `basePath` + `defaults`. The `<Aff>` component reads from it at render time, so changing `basePath` or `defaults` in your `astro.config.mjs` doesn't require touching components.
+- **Content scan validation.** Before the build runs, the integration walks `src/content/**/*.{md,mdx}` looking for `<Aff slug="…">` references. Slugs not in your config raise an error (or warning); slugs in your config but never cited are reported as info.
 
 ## Configuration reference
 
-See [API.md](./API.md) (TODO before v0.1 release).
+### Integration options
+
+```ts
+recommends({
+  basePath?: string;        // default: '/recommends'. Must start with '/'.
+  target: 'cloudflare' | 'netlify';
+  config?: string;          // explicit path; auto-detected otherwise (see below)
+  validate?: 'strict' | 'warn' | 'off';  // default: 'strict'
+  defaults?: {
+    rel?: string[];         // default: ['sponsored', 'nofollow', 'noopener']
+    target?: '_blank' | '_self' | '_parent' | '_top';  // default: '_blank'
+  };
+})
+```
+
+### Affiliate entries
+
+```ts
+defineAffiliates({
+  '<slug>': {
+    url: string;            // required. Must be a valid URL.
+    label?: string;         // optional. Used for accessibility / fallback rendering.
+    note?: string;          // optional. Author bookkeeping — never rendered.
+  },
+});
+```
+
+Slugs must be URL-safe: lowercase letters, digits, and hyphens only; no leading or trailing hyphen. The slug is the *key* in the map (not a field), keeping the file diff-friendly when you add or reorder entries.
+
+### Per-element overrides
+
+The `<Aff>` component accepts:
+
+```mdx
+<Aff
+  slug="deep-work"
+  rel={['sponsored']}        // overrides defaults.rel
+  target="_self"             // overrides defaults.target
+  class="my-affiliate-class" // forwarded to the rendered <a>
+>
+  Deep Work
+</Aff>
+```
+
+The body of the `<Aff>` tag is the rendered link text. Use it like any other inline component.
+
+## Config file formats
+
+`astro-recommends` auto-detects the config in this order, relative to your project root:
+
+1. `affiliates.config.ts`
+2. `affiliates.config.mts`
+3. `affiliates.config.js`
+4. `affiliates.config.mjs`
+5. `affiliates.config.jsonc`
+6. `affiliates.config.json`
+7. `affiliates.config.yaml`
+8. `affiliates.config.yml`
+
+Override with the `config` integration option.
+
+TypeScript is recommended for autocomplete, type checking, and inline comments (`note` fields are great for tracking commission rates, expiry dates, etc). JSON / JSONC / YAML are accepted for users who don't want TS or who generate config from another tool. TS configs are loaded via [jiti](https://github.com/unjs/jiti) — no consumer build step required.
+
+## Migration from ThirstyAffiliates
+
+The fast path: ThirstyAffiliates exposes its `thirstylink` custom post type via the public WP REST API on **all** plans (no Pro upgrade required). A reference script lives at [`examples/import-thirstyaffiliates.mjs`](./examples/import-thirstyaffiliates.mjs):
+
+```bash
+node examples/import-thirstyaffiliates.mjs \
+  --site https://yourdomain.com \
+  --out  ./affiliates.config.ts
+```
+
+Set your integration's `basePath` to match your existing WP cloak prefix (e.g. `/go` or `/recommends`) so every existing in-content link, RSS reader cache, and external share keeps resolving to the same destination.
+
+A built-in `npx astro-recommends import-thirsty` is planned for v0.2.
+
+## Roadmap
+
+- **v0.2**: Vercel + nginx targets. Built-in `import-thirsty` CLI. Optional `/<basePath>/` index page generator.
+- **v0.3**: Per-entry `rel`/`target` overrides via the virtual module.
+- **v1**: Optional Cloudflare Worker click tracker (KV/D1) for per-link analytics.
 
 ## License
 
