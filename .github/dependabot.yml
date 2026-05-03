@@ -1,0 +1,21 @@
+version: 2
+updates:
+  # Keep workflow action SHAs current — they're pinned to specific commits
+  # for supply-chain safety; without Dependabot they'd drift behind.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      dev-deps:
+        dependency-type: development
+      prod-deps:
+        dependency-type: production

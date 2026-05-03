@@ -5,10 +5,24 @@
 // rel/target defaults come from the integration via the virtual module
 // 'astro-recommends:resolved' (injected during astro:config:setup).
 //
-// Per-element props override the resolved defaults.
+// Per-element props (rel, target, class) override the resolved defaults.
+//
+// Two security-related rules:
+//   1. The slug prop is re-validated against the same URL-safe regex the
+//      config map uses. The config side already enforces this for entries,
+//      but the prop value crosses a different trust boundary (the MDX
+//      author may not be the integration configurer). Without this check,
+//      a slug like "../../evil?x=y" would silently produce a misleading
+//      href; Astro's attribute escaping blocks XSS, but link integrity
+//      would still be broken.
+//   2. When target='_blank', `noopener` is always present in the rendered
+//      `rel` attribute — even if the author overrides `rel` to a value
+//      that omits it. Reverse-tabnabbing has no legitimate use case;
+//      forcing the bit removes a footgun without restricting valid uses.
 
 // @ts-expect-error -- virtual module provided by the astro-recommends integration
 import { resolved } from 'astro-recommends:resolved';
+import { SLUG_PATTERN } from '../config.ts';
 
 interface Props {
   slug: string;
@@ -19,12 +33,27 @@ interface Props {
 
 const { slug, rel, target, class: className } = Astro.props;
 
+if (!SLUG_PATTERN.test(slug)) {
+  throw new Error(
+    `[astro-recommends] <Aff slug="${slug}"> — slug must be URL-safe ` +
+      `(lowercase letters, digits, hyphens; no leading/trailing hyphen).`,
+  );
+}
+
 const basePath: string = resolved.basePath;
 const defaultRel: string[] = resolved.defaults?.rel ?? ['sponsored', 'nofollow', 'noopener'];
 const defaultTarget: NonNullable<Props['target']> = resolved.defaults?.target ?? '_blank';
 
-const href = `${basePath}/${slug}`;
-const relAttr = (rel ?? defaultRel).join(' ');
 const targetAttr = target ?? defaultTarget;
+const userRel = rel ?? defaultRel;
+
+const relSet = new Set(userRel);
+if (targetAttr === '_blank') {
+  // Force noopener whenever target='_blank' regardless of explicit override.
+  relSet.add('noopener');
+}
+const relAttr = [...relSet].join(' ');
+
+const href = `${basePath}/${slug}`;
 ---
 <a href={href} rel={relAttr} target={targetAttr} class={className}><slot /></a>

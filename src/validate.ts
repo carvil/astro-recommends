@@ -7,7 +7,12 @@ export interface ValidationResult {
   unusedSlugs: string[];
 }
 
-const AFF_RE = /<Aff[\s\S]*?\bslug=["']([^"']+)["']/g;
+// Anchored to <Aff followed by a word boundary, then non-greedy attrs up to
+// the closing '>'. The previous /<Aff[\s\S]*?…/ form would skip across an
+// arbitrary distance — a stray `<Aff` token in prose followed eventually by
+// a real <Aff slug="x"> would misattribute the slug. This form caps the
+// match within a single tag.
+export const AFF_RE = /<Aff\b[^>]*?\bslug=["']([^"']+)["']/g;
 const CONTENT_EXTS = /\.(md|mdx)$/;
 
 async function walkContent(dir: string): Promise<string[]> {

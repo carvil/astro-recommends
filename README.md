@@ -185,11 +185,15 @@ Set your integration's `basePath` to match your existing WP cloak prefix (e.g. `
 
 A built-in `npx astro-recommends import-thirsty` is planned for v0.2.
 
+## Security
+
+See [SECURITY.md](./SECURITY.md) for the threat model, hardening enforced by the library (URL scheme allowlist, CR/LF rejection, forced `noopener` on `target='_blank'`, slug re-validation at render time), and consumer recommendations (CODEOWNERS on `affiliates.config.ts`, periodic destination audits, npm provenance verification).
+
 ## Roadmap
 
 - **v0.2**: Vercel + nginx targets. Built-in `import-thirsty` CLI. Optional `/<basePath>/` index page generator.
 - **v0.3**: Per-entry `rel`/`target` overrides via the virtual module.
-- **v1**: Optional Cloudflare Worker click tracker (KV/D1) for per-link analytics.
+- **v1**: Optional Cloudflare Worker click tracker (KV/D1) for per-link analytics. **Stance:** no per-visitor identifiers without explicit opt-in; aggregate counters only by default.
 
 ## License
 
