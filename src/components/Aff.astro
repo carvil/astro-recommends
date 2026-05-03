@@ -1,0 +1,30 @@
+---
+// <Aff slug="..." [rel] [target] [nofollow] [sponsored]>label</Aff>
+//
+// Renders an anchor pointing at the cloaked URL ({basePath}/{slug}).
+// Per-element props override config-level defaults; the integration
+// resolves and injects the resolved basePath + defaults via virtual
+// module 'astro-recommends:resolved' at build time (TODO in v0.1).
+//
+// Until the virtual module is wired up, the component falls back to
+// /recommends/{slug} with safe rels — sufficient for snapshot tests.
+
+interface Props {
+  slug: string;
+  rel?: string[];
+  target?: '_blank' | '_self' | '_parent' | '_top';
+  class?: string;
+}
+
+const { slug, rel, target, class: className } = Astro.props;
+
+// TODO: replace with values from 'astro-recommends:resolved' virtual module
+const basePath = '/recommends';
+const defaultRel = ['sponsored', 'nofollow', 'noopener'];
+const defaultTarget: NonNullable<Props['target']> = '_blank';
+
+const href = `${basePath}/${slug}`;
+const relAttr = (rel ?? defaultRel).join(' ');
+const targetAttr = target ?? defaultTarget;
+---
+<a href={href} rel={relAttr} target={targetAttr} class={className}><slot /></a>

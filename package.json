@@ -1,0 +1,62 @@
+{
+  "name": "astro-recommends",
+  "version": "0.0.0",
+  "description": "Affiliate link cloaking for Astro — single-source-of-truth config, build-time edge redirects, MDX component. A static-site replacement for ThirstyAffiliates.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Carlos Vilhena (https://carlosvilhena.com)",
+  "homepage": "https://github.com/carvil/astro-recommends",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/carvil/astro-recommends.git"
+  },
+  "bugs": "https://github.com/carvil/astro-recommends/issues",
+  "keywords": [
+    "astro",
+    "astro-component",
+    "astro-integration",
+    "affiliate",
+    "affiliate-links",
+    "thirstyaffiliates",
+    "redirects",
+    "cloaking",
+    "withastro"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./components": "./src/components.ts",
+    "./components/Aff.astro": "./src/components/Aff.astro",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "changeset": "changeset",
+    "release": "changeset publish"
+  },
+  "peerDependencies": {
+    "astro": "^5 || ^6"
+  },
+  "dependencies": {
+    "yaml": "^2.6.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.9",
+    "@types/node": "^22.7.0",
+    "astro": "^6.1.7",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=18.17.0"
+  }
+}
