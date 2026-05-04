@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+### Patch Changes
+
+- 8899cde: Docs: add an "In the wild" section to the README with a link to [carlosvilhena.com](https://carlosvilhena.com), the first production site running this library. No code changes.
+
 ## 0.1.1
 
 ### Patch Changes
