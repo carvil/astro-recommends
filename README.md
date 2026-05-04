@@ -199,6 +199,10 @@ See [SECURITY.md](./SECURITY.md) for the threat model, hardening enforced by the
 - **v0.3**: Per-entry `rel`/`target` overrides via the virtual module.
 - **v1**: Optional Cloudflare Worker click tracker (KV/D1) for per-link analytics. **Stance:** no per-visitor identifiers without explicit opt-in; aggregate counters only by default.
 
+## In the wild
+
+[carlosvilhena.com](https://carlosvilhena.com) — built with `astro-recommends`; affiliate links open-sourced.
+
 ## License
 
 MIT © Carlos Vilhena
