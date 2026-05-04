@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./assets/logo.svg" alt="astro-recommends" width="160" height="160" />
+</p>
+
 # astro-recommends
 
 > Affiliate link cloaking for Astro. One config file → edge redirects + an `<Aff>` MDX component. A static-site replacement for ThirstyAffiliates.
